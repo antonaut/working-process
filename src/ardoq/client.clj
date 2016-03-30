@@ -87,29 +87,29 @@
   http/client together with optional url parameters.
   "
   [name method & {:keys [use-id? no-return? return-many?]
-                  :or {:use-id? false
-                       :no-return? false
-                       :return-many? false}
-                  :as options}]
-  (let [resource (gensym "resource")
-        client (gensym "client")
-        params (gensym "params")
+                  :or   {:use-id?      false
+                         :no-return?   false
+                         :return-many? false}
+                  :as   options}]
+  (let [resource    (gensym "resource")
+        client      (gensym "client")
+        params      (gensym "params")
         parsed-body (gensym "parsed-body")
         path-suffix (if use-id?
                       (list :_id resource)
                       (list first params))
-        status-if (if no-return?
-                     'if-not
-                     'if)
-        retvals (when
-                    (:return-many? options) (list map (partial coerce-response resource parsed-body))
-                    no-return? ()
-                    :else (list coerce-response resource parsed-body))
+        status-if   (if no-return?
+                      'if-not
+                      'if)
+        retvals     (when
+                        (:return-many? options) (list (list map (partial coerce-response resource parsed-body)))
+                        no-return? ()
+                        :else (list (list coerce-response resource parsed-body)))
         ]
-   `(defn ~name [~resource ~client & ~params]
-       (let [url# (str (:url ~client) "/api/" (resource-path ~resource) "/" ~path-suffix)
+    `(defn ~name [~resource ~client & ~params]
+       (let [url#                    (str (:url ~client) "/api/" (resource-path ~resource) "/" ~path-suffix)
              {:keys [status# body#]} @(~method url# (:options ~client))
-             ~parsed-body (json/read-json body# true)]
+             ~parsed-body            (json/read-json body# true)]
          (~status-if (ok? status#)
           ~@retvals
           (throw (ex-info "client-exception" {:status status# :body body#})))))))
