@@ -1,5 +1,5 @@
 (* This describes a subset of the org-mode syntax. *)
-org-file = org-header-1* | <comment>* | <Epsilon>
+org-file = org-header-1* | <Epsilon>
 org-header-1 = <"*">         <whitespace> title (content | <whitespace>) org-header-2*
 org-header-2 = <"**">        <whitespace> title (content | <whitespace>) org-header-3*
 org-header-3 = <"***">       <whitespace> title (content | <whitespace>) org-header-4*
