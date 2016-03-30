@@ -1,0 +1,15 @@
+(* This describes a subset of the org-mode syntax. *)
+org-file = org-header-1* | <comment>* | <Epsilon>
+org-header-1 = <"*">         <whitespace> title (content | <whitespace>) org-header-2*
+org-header-2 = <"**">        <whitespace> title (content | <whitespace>) org-header-3*
+org-header-3 = <"***">       <whitespace> title (content | <whitespace>) org-header-4*
+org-header-4 = <"****">      <whitespace> title (content | <whitespace>) org-header-5*
+org-header-5 = <"*****">     <whitespace> title (content | <whitespace>) org-header-6*
+org-header-6 = <"******">    <whitespace> title (content | <whitespace>) org-header-7*
+org-header-7 = <"*******">   <whitespace> title (content | <whitespace>) org-header-8*
+org-header-8 = <"********">  <whitespace> title (content | <whitespace>)
+
+(* Text/tokens *)
+whitespace = <#"\s+">
+title = #".*" <"\n">
+content = (#"(.)+"* <#"\n">)*
