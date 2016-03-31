@@ -6,7 +6,7 @@
 (defn parse-org-file
   [filename]
   (let [org-parser (insta/parser (io/resource "org.bnf"))
-        org-file (io/file filename)]
+        org-file   (io/file filename)]
     (conj (org-parser (slurp org-file))
           [:title filename])))
 
@@ -35,14 +35,22 @@
   [maybe-node]
   (some? (node-type maybe-node)))
 
-(defn node-title
-  [node]
+(defn node-attr
+  [node attr]
   (when (node? node)
     (->> node
          (filter sequential?)
          (remove empty?)
-         (filter #(= (first %) :title))
-         (map (comp first rest)))))
+         (filter #(= (first %) attr))
+         (map (comp first rest))
+         first)))
+
+
+(defn node-title
+  [node]
+  (node-attr node :title))
+
+
 
 (defn children
   [node]

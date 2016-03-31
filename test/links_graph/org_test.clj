@@ -23,6 +23,13 @@
 ;; Slightly bigger test case
 (def testorg (parse-org-resource "test.org"))
 
+
+;; Get all content
+(let  [org-tree-seq (tree-seq node? children testorg)]
+  (->> org-tree-seq (map #(node-attr % :content))
+       flatten
+       (filter some?)))
+
 ;; First level
 (->> testorg
      children)
