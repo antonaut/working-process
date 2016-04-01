@@ -1,6 +1,6 @@
 * header-1
 ** header-2
-** header-2
+** header-22
 *** header-3
     Content header-3, line 1
     Content header-3, line 2

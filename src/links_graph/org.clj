@@ -3,16 +3,16 @@
             [clojure.java.io :as io]
             [rhizome.viz :as viz]))
 
-(defn parse-org-file
+(defn parse-file
   [filename]
   (let [org-parser (insta/parser (io/resource "org.bnf"))
         org-file   (io/file filename)]
     (conj (org-parser (slurp org-file))
           [:title filename])))
 
-(defn parse-org-resource
+(defn parse-resource
   [resource-filename]
-  (parse-org-file
+  (parse-file
    (io/resource resource-filename)))
 
 (defn node-type
@@ -35,6 +35,13 @@
   [maybe-node]
   (some? (node-type maybe-node)))
 
+(defn leaf-node?
+  [node]
+  (-> node
+      children
+      count
+      zero?))
+
 (defn node-attr
   [node attr]
   (when (node? node)
@@ -50,14 +57,19 @@
   [node]
   (node-attr node :title))
 
-
+(defn node-level
+  [node]
+  (let [type-str (name (node-type node))]
+    (if (not (.contains type-str "header"))
+      0
+      (Character/getNumericValue (last (seq type-str))))))
 
 (defn children
   [node]
   (vec (filter node? node)))
 
 
-(defn view-org-tree
+(defn view-tree
   [org-tree]
   (viz/view-tree node? children org-tree
                  :node->descriptor (fn [node] {:label (node-title node)})))

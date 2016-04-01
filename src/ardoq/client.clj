@@ -44,8 +44,13 @@
     (letfn [(flatten-model [nodes res]
               (if (empty? nodes)
                 res
-                (let [{id :id children :children :as node} (first nodes)
-                      r (assoc res (keyword id) (update-in node [:children] #(vec (map (comp name first) %))))
+                (let [{id       :id
+                       children :children
+                       :as      node}  (first nodes)
+                      r                (assoc res
+                                              (keyword id)
+                                              (update-in node [:children]
+                                                         #(mapv (comp name first) %)))
                       updated-children (map (fn [[_ i]] (assoc i :parent id)) children)]
                   (flatten-model (concat (rest nodes) updated-children) r))))]
       (flatten-model (map (fn [[_ i]] (assoc i :parent nil)) (:root model)) {}))))
