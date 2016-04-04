@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [links-graph.org :refer :all]))
 
-;; Small testcase
+;; A small testcase describing a small .org file
 (def t1
   [:org-file
    [:org-header-1 [:title "header111"]
@@ -12,7 +12,6 @@
 
 
 ;; Node titles
-
 (node-title [:org-header-2
              [:title "header22"]])
 
@@ -21,14 +20,9 @@
 
 
 ;; Slightly bigger test case
-(def testorg (parse-org-resource "test.org"))
+(def testorg (parse-resource "test.org"))
 
-
-;; Get all content
-(let  [org-tree-seq (tree-seq node? children testorg)]
-  (->> org-tree-seq (map #(node-attr % :content))
-       flatten
-       (filter some?)))
+;;; Traverse the org-tree
 
 ;; First level
 (->> testorg
@@ -39,6 +33,44 @@
      children
      (mapcat children))
 
-;;(def spec-org (parse-org-file spec-file-path))
+;; Transform tree into a seq (depth first traversal)
+(defn org-tree-seq
+  [org-tree]
+  (tree-seq node? children org-tree))
 
-(view-org-tree t1)
+
+(deftest count-headlines
+
+  (defn long-str [& strings] (str (clojure.string/join "\n" strings) "\n"))
+
+  (testing "The number of headlines in an org string."
+    (is (= 3 (->>
+              (parse-string (long-str
+                             "* One Hello world!"
+                             "** Two I like this"
+                             "Some text."
+                             "*** Three"))
+              org-tree-seq
+              count
+              dec
+              ))) ; dec because of 'root' node
+    (is (= 8 (->>
+              (parse-string (long-str
+                             "* One"
+                             "** One.One"
+                             "** One.Two"
+                             "* Two"
+                             "** Two.One"
+                             "*** Two.One.One"
+                             "** Two.Two"
+                             "** Two.Three"))
+              org-tree-seq
+              count
+              dec)))))
+
+;;; Graph repesentation
+;;(let [m1 (org-tree->map-tree t1)
+;;g1 (map-tree->graph m1)] )
+
+;;; Visualization
+;;(view-tree t1)
