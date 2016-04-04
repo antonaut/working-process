@@ -69,8 +69,10 @@
               dec)))))
 
 ;;; Graph repesentation
-;;(let [m1 (org-tree->map-tree t1)
-;;g1 (map-tree->graph m1)] )
+(let [m1  (org-tree->map-tree t1)
+      g1  (map-tree->graph m1)
+      id1 (first (first (vals g1)))]
+  (find-by-id m1 id1))
 
 ;;; Visualization
 ;;(view-tree t1)

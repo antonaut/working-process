@@ -81,7 +81,7 @@
   [node]
   (when (node? node)
     (let [type     (node-type node)
-          id       (gensym "node")
+          id       (keyword (gensym "node"))
           org-node node]
       {:type     type
        :id       id
@@ -97,9 +97,9 @@
 
 (defn map-node->parent-child-ids
   [root]
-  (when (not (nil? root))
-    (let [child-ids (mapv (comp keyword :id) (:children root))]
-      (assoc {} (keyword (:id root)) child-ids))))
+  (when root
+    (let [child-ids (mapv :id (:children root))]
+      (assoc {} (:id root) child-ids))))
 
 (defn map-tree->graph
   "Turns a org-map-tree into a
@@ -126,6 +126,12 @@
                  (into (pop queue) (:children current))
                  g))))))
 
+(defn find-by-id
+  [map-tree id]
+  (when map-tree
+    (if (= id (:id map-tree))
+      map-tree
+      (first (remove nil? (map #(find-by-id % id) (:children map-tree)))))))
 
 
 (defn view-tree

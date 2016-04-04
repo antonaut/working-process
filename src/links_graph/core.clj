@@ -39,8 +39,14 @@
 ;; for "Org headers".
 
 (def ardoq-component-types
-  {:org-header "p1459500461531"
-   :org-file   "p1459344429473"})
+  {:org-header-1 "p1459500461531"
+   :org-header-2 "p1459500461531"
+   :org-header-3 "p1459500461531"
+   :org-header-4 "p1459500461531"
+   :org-header-5 "p1459500461531"
+   :org-header-6 "p1459500461531"
+   :org-header-7 "p1459500461531"
+   :org-file     "p1459344429473"})
 
 (def ardoq-ref-types
   {:contains 4
@@ -74,7 +80,7 @@
     ((complement zero?) (count (intersection component-types org-components)))))
 
 (defn add-ardoq-component
-  "Adds Ardoq components to an org-node."
+  "Adds Ardoq components to a map-node."
   [node workspace model]
   (if-not (nil? node)
     (let [org-node       (:org-node node)
@@ -82,32 +88,17 @@
           component-type (node-type org-node)
           field-level    (node-level org-node)
           field-content  (node-attr org-node :content)]
-      (->
-       (assoc
-        :ardoq-component
-        (client/->Component component-name
-                            ""
-                            (:_id workspace)
-                            (:_id model)
-                            (component-type ardoq-component-types)
-                            (:content (node-attr org-node :content))))
-       (assoc
-        :fields {:level   field-level
-                 :content field-content})))))
-
-
-
-(defn ardoq-components->name-id-map [components]
-  (into
-   {}
-   (map
-    (fn [c] {(:name c) (:_id c)})
-    components)))
-
-
-(defn ardoq-components->ardoq-reference
-  [workspace source target reftype]
-  (client/->Reference (:_id workspace) source target reftype))
+      (assoc
+       node
+       :ardoq-component
+       (client/->Component component-name
+                           ""
+                           (:_id workspace)
+                           (:_id model)
+                           (component-type ardoq-component-types)
+                           (:content (node-attr org-node :content)))
+       :fields {:level   field-level
+                :content field-content}))))
 
 
 (comment
@@ -116,19 +107,97 @@
      (find-org-fields client)
      (filter #(field-on-component-types? % ardoq-component-types)))))
 
+(defn create-ardoq-components
+  [workspace model  map-tree graph]
+  (loop [components {}
+         nodes      (keys graph)
+         current    (first nodes)
+         ]
+    (if (empty? nodes)
+      components
+      (let [component       (-> (add-ardoq-component
+                                 (find-by-id map-tree current)
+                                 workspace
+                                 model)
+                                (dissoc :children :org-node))
+            ardoq-component (:ardoq-component component)]
+        (recur (assoc components (:id component)
+                      (conj ardoq-component
+                            (dissoc component :ardoq-component)))
+               (rest nodes)
+               (first (rest nodes)))))))
 
+
+(defn find-component
+  [src components]
+  (loop [comps   components
+         current (first comps)]
+    (cond (= src (keyword (:id current))) current
+          (empty? comps)                  nil
+          :else                           (recur (rest comps) (first (rest comps))))))
+
+(defn create-reference
+  [workspace source target reftype components]
+  (let [src (find-component source components)
+        tar (find-component target components)]
+    (assoc (client/->Reference (:_id workspace) (:_id src) (:_id tar))
+           :type reftype)))
+
+
+(defn create-ardoq-references
+  [graph components workspace]
+  (loop [nodes          (keys graph)
+         current-source (first nodes)
+         references     {}]
+    (if (empty? nodes)
+      references
+      (recur (rest nodes)
+             (first (rest nodes))
+             (assoc references
+                    current-source
+                    (mapv #(create-reference
+                            workspace
+                            current-source
+                            %
+                            (:contains ardoq-ref-types)
+                            components)
+                          (current-source graph)))))))
+
+(defn components->ardoq
+  [components client]
+  (let [comps           (group-by #(= (:type %) :org-file)
+                                  components)
+        file            (first (get comps true))
+        headers         (get comps false)
+        file-created    (client/create file client)
+        file-_id        (:_id file-created)
+        headers-created (mapv #(client/create
+                                (assoc % :parent file-_id)
+                                client) headers)]
+    (conj headers-created file-created)))
 
 (defn main- []
-  (let [client    (new-client-from-env)
-        model     (find-org-model client)
-        workspace (find-org-workspace client)
+  (let [client                   (new-client-from-env)
+        model                    (find-org-model client)
+        workspace                (find-org-workspace client)
         ;;fields            (find-org-fields client)
-        org-tree  (parse-file "./resources/test.org")
-        map-tree  (org-tree->map-tree org-tree)
-        graph     (map-tree->graph map-tree)]
-    (->>
-
-     )))
+        org-tree                 (parse-file "./resources/test.org")
+        map-tree                 (org-tree->map-tree org-tree)
+        graph                    (map-tree->graph map-tree)
+        ardoq-components         (create-ardoq-components
+                                  workspace
+                                  model
+                                  map-tree
+                                  graph)
+        created-ardoq-components (components->ardoq
+                                  (vals ardoq-components)
+                                  client)]
+    (mapv #(client/create % client)
+          (->
+           (create-ardoq-references graph created-ardoq-components workspace)
+           vals
+           flatten
+           ))))
 
 ;; relations (org-tree-map->ardoq-relations org-tree-map)
 
