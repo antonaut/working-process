@@ -1,6 +1,8 @@
 (ns links-graph.org-test
   (:require [clojure.test :refer :all]
-            [links-graph.org :refer :all]))
+            [links-graph.org :refer :all]
+            [instaparse.core :as insta]
+            [clojure.java.io :as io]))
 
 
 ;; A small testcase describing a small .org file
@@ -41,13 +43,22 @@
 
 (defn long-str [& strings] (str (clojure.string/join "\n" strings) "\n"))
 
-(parse-string (long-str
-               "# Hell.?!oajskdsoj2323a?"
-               " asd asd"
-               "* One Hello world!"
-               "** Two I like this"
-               "Some text."
-               "*** Three"))
+(def tstr (long-str
+           "# Hell.?!oajskdsoj2323a?"
+           " asd asd"
+           "* One Hello world!"
+           "** Two I like this"
+           "Some text."
+           "*** Three"))
+
+(defn parses-test
+  [string]
+  (let [org-parser (insta/parser (io/resource "org.bnf"))]
+    (insta/parses org-parser string)))
+
+(deftest unambiguous-grammar
+  (is
+   (= 1 (count (parses-test tstr)))))
 
 
 (deftest count-headlines
