@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [links-graph.org :refer :all]))
 
+
 ;; A small testcase describing a small .org file
 (def t1
   [:org-file
@@ -38,14 +39,23 @@
   [org-tree]
   (tree-seq node? children org-tree))
 
+(defn long-str [& strings] (str (clojure.string/join "\n" strings) "\n"))
+
+(parse-string (long-str
+               "# Hell.?!oajskdsoj2323a?"
+               " asd asd"
+               "* One Hello world!"
+               "** Two I like this"
+               "Some text."
+               "*** Three"))
+
 
 (deftest count-headlines
-
-  (defn long-str [& strings] (str (clojure.string/join "\n" strings) "\n"))
 
   (testing "The number of headlines in an org string."
     (is (= 3 (->>
               (parse-string (long-str
+                             "# Hello"
                              "* One Hello world!"
                              "** Two I like this"
                              "Some text."

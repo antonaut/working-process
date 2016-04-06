@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8" content="text/html" http-equiv="Content-Type" /><meta content="FIXME: write description" name="description" /><style type="text/css">/**
+<html><head><meta charset="utf-8" content="text/html" http-equiv="Content-Type" /><meta content="Implements visualization of org-mode files" name="description" /><style type="text/css">/**
  * SyntaxHighlighter
  * http://alexgorbatchev.com/SyntaxHighlighter
  *
@@ -2865,32 +2865,509 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>links-graph -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://example.com/FIXME">links-graph</a></h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>FIXME: write description</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.7.0</td></tr><tr><td class="dep-name">org.clojure/algo.generic</td><td class="dotted"><hr /></td><td class="dep-version">0.1.2</td></tr><tr><td class="dep-name">com.rpl/specter</td><td class="dotted"><hr /></td><td class="dep-version">0.9.2</td></tr><tr><td class="dep-name">rhizome</td><td class="dotted"><hr /></td><td class="dep-version">0.2.5</td></tr><tr><td class="dep-name">org.clojars.gmorpheme/organum</td><td class="dotted"><hr /></td><td class="dep-version">0.1.1</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#links-graph.core">links-graph.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#links-graph.core" name="links-graph.core"><h1 class="project-name">links-graph.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This is a small application for showing the headlines of an .org
-file like a (tree==)graph.</p>
+</script><title>links-graph -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://example.com/FIXME">links-graph</a></h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>Implements visualization of org-mode files</p>
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.7.0</td></tr><tr><td class="dep-name">org.clojure/data.json</td><td class="dotted"><hr /></td><td class="dep-version">0.2.6</td></tr><tr><td class="dep-name">http-kit</td><td class="dotted"><hr /></td><td class="dep-version">2.1.19</td></tr><tr><td class="dep-name">instaparse</td><td class="dotted"><hr /></td><td class="dep-version">1.4.1</td></tr><tr><td class="dep-name">rhizome</td><td class="dotted"><hr /></td><td class="dep-version">0.2.5</td></tr><tr><td class="dep-name">org.clojars.gmorpheme/organum</td><td class="dotted"><hr /></td><td class="dep-version">0.1.1</td></tr><tr><td class="dep-name">org.clojure/core.match</td><td class="dotted"><hr /></td><td class="dep-version">0.3.0-alpha4</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#links-graph.org-tree-zipper">links-graph.org-tree-zipper</a></li><li><a href="#links-graph.core">links-graph.core</a></li><li><a href="#links-graph.org">links-graph.org</a></li><li><a href="#ardoq.client">ardoq.client</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#links-graph.org-tree-zipper" name="links-graph.org-tree-zipper"><h1 class="project-name">links-graph.org-tree-zipper</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><h1>org-tree-zipper is not used</h1>
+
+<p>It is just a cave where ideas can grow.</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns links-graph.org-tree-zipper
+  (:require [clojure.zip :as z]
+            [links-graph.org :refer :all]))</pre></td></tr><tr><td class="docs"><p>IDEA: Use a zipper to traverse the tree and replace org-nodes with ardoq-entities.</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn org-tree-&gt;zipper
+  [org-tree]
+  (z/zipper
+   node?
+   children
+   (fn [n children]
+     (vec (cons n children)))
+   org-tree))</pre></td></tr><tr><td class="docs"><p>Thanks for tree-edit, Alex Miller (alex@puredanger.com)
+http://www.ibm.com/developerworks/library/j-treevisit/</p>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Edits every zipper node with editor fn.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn tree-edit
+  [zipper editor]
+  (loop [loc zipper]
+    (if (z/end? loc)
+      (z/root loc)
+      (recur (z/next (z/edit loc editor))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(comment
+  (defn zipper-&gt;seq
+    [zipper]
+    (loop [loc   zipper
+           nodes ()]
+      (if (z/end? loc)
+        nodes
+        (let [node (z/node loc)]
+          (if-not (nil? node)
+            (recur (z/next loc) (cons node nodes))
+            (recur (z/next loc) nodes)))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(comment
+  ;; Constuction and usage of a zipper
+  (let [org-tree    (parse-file &quot;./resources/test.org&quot;)
+        tree-zipper (z/zipper node? children identity org-tree)]
+    (-&gt;
+     tree-zipper
+     z/down
+     z/down
+     z/node
+     (node-attr :title))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#links-graph.core" name="links-graph.core"><h1 class="project-name">links-graph.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>links-graph - for visualization of .org-file headers</p>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>This module visualizes an .org file in two ways. The first is
+through the org module, by using
+<a href="https://github.com/ztellman/rhizome">rhizome</a>. The second is
+through <a href="https://ardoq.com">Ardoq</a> by using their client and
+REST-API.</p>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>We use links-graph.org so we can turn an .org-file into a tree and
+manipulate it as we wish.</p>
 </td><td class="codes"></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns links-graph.core
-  (:use [clojure.algo.generic.functor :only [fmap]])
-  (:require [organum.core :as org]
-            [rhizome.viz :as viz]))</pre></td></tr><tr><td class="docs"><p>The tree of life. The data. Not so beautiful, but still available.</p>
-</td><td class="codes"><pre class="brush: clojure">(def org-tree (org/parse-file &quot;../links.org&quot;))</pre></td></tr><tr><td class="docs"><p>IDEA - I'd like to make a small test case. Like really small.
-JUST MAKE A TEST</p>
-</td><td class="codes"></td></tr><tr><td class="docs"><p>TODO Read a lil bit more on how organum data is ordered.
-TODO Make the graph transform with specter.</p>
-</td><td class="codes"></td></tr><tr><td class="docs"><p>org-node</p>
-</td><td class="codes"><pre class="brush: clojure">(defn org-node-to-vertex
+  (:require [links-graph.org :refer :all :as org]
+            [clojure.data.json :as json]
+            [clojure.java.io :as io]
+            [clojure.set :refer [intersection]]
+            [clojure.zip :as z]
+            [clojure.core :exclude [update]]
+            [ardoq.client :as client]))</pre></td></tr><tr><td class="docs"><p>Default contents of resources/private/env.json:</p>
+
+<pre>
+   {
+     "ARDOQ_API_URL"      : "https://app.ardoq.com",
+     "ARDOQ_API_TOKEN"    : "your-api-token",
+     "ARDOQ_ORGANIZATION" : "ardoq"
+   }
+</pre>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Creates a new client from "resources/private/env.json".</p>
+</td><td class="codes"><pre class="brush: clojure">(defn new-client-from-env
+  []
+  (let [ardoq-info (json/read-json (slurp (io/resource &quot;private/env.json&quot;)))]
+    (client/client {:url   (:ARDOQ_API_URL ardoq-info)
+                    :token (:ARDOQ_API_TOKEN ardoq-info)
+                    :org   (:ARDOQ_ORGANIZATION ardoq-info)})))</pre></td></tr><tr><td class="docs"><p>These components &amp; references are defined in Ardoq. They were
+fetched by asking the client for all the models and filtering them
+for "Org headers".</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(def ardoq-component-types
+  {:org-header-1 &quot;p1459500461531&quot;
+   :org-header-2 &quot;p1459500461531&quot;
+   :org-header-3 &quot;p1459500461531&quot;
+   :org-header-4 &quot;p1459500461531&quot;
+   :org-header-5 &quot;p1459500461531&quot;
+   :org-header-6 &quot;p1459500461531&quot;
+   :org-header-7 &quot;p1459500461531&quot;
+   :org-file     &quot;p1459344429473&quot;})</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(def ardoq-ref-types
+  {:contains 4
+   :implicit 2})</pre></td></tr><tr><td class="docs"><p>Finds the models defined in Ardoq named "Org headers".</p>
+</td><td class="codes"><pre class="brush: clojure">(defn find-org-model
+  [client]
+  (-&gt;&gt; (client/find-all (client/map-&gt;Model {}) client)
+       (filter #(= &quot;Org headers&quot; (:name %)))
+       first))</pre></td></tr><tr><td class="docs"><p>Finds a workspace named "orgfiles" in Ardoq.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn find-org-workspace
+  [client]
+  (-&gt;&gt; (client/find-all (client/map-&gt;Workspace {}) client)
+       (filter #(= &quot;orgfiles&quot; (:name %)))
+       first))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn find-all-fields
+  [client]
+  ;; QUESTION: How to query? Ex. all fields used in a certain workspace
+  ;; ANSWER: Filter in client.
+  (-&gt;&gt; (client/find-all (client/map-&gt;Field {}) client)))</pre></td></tr><tr><td class="docs"><p>Is this client/Field defined for given component-types?</p>
+</td><td class="codes"><pre class="brush: clojure">(defn field-on-component-types?
+  [field ardoq-component-types]
+  (let [component-types (set (:componentType field))
+        org-components  (set (vals ardoq-component-types))]
+    ((complement zero?) (count (intersection component-types org-components)))))</pre></td></tr><tr><td class="docs"><p>Adds Ardoq components to a map-node.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn add-ardoq-component
+  [node workspace model]
+  (if-not (nil? node)
+    (let [org-node       (:org-node node)
+          component-name (node-attr org-node :title)
+          component-type (node-type org-node)
+          field-level    (node-level org-node)
+          field-content  (node-attr org-node :content)]
+      (assoc
+       node
+       :ardoq-component
+       (client/-&gt;Component component-name
+                           &quot;&quot;
+                           (:_id workspace)
+                           (:_id model)
+                           (component-type ardoq-component-types)
+                           (:content (node-attr org-node :content)))
+       :fields {:level   field-level
+                :content field-content}))))</pre></td></tr><tr><td class="docs"><p>TODO: Work on fields</p>
+</td><td class="codes"><pre class="brush: clojure">(comment
+  (let [client (new-client-from-env)]
+    (-&gt;&gt;
+     (find-org-fields client)
+     (filter #(field-on-component-types? % ardoq-component-types)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-ardoq-components
+  [workspace model  map-tree graph]
+  (loop [components {}
+         nodes      (keys graph)
+         current    (first nodes)]
+    (if (empty? nodes)
+      components
+      (let [component       (-&gt; (add-ardoq-component
+                                 (find-by-id map-tree current)
+                                 workspace
+                                 model)
+                                (dissoc :children :org-node))
+            ardoq-component (:ardoq-component component)]
+        (recur (assoc components (:id component)
+                      (conj ardoq-component
+                            (dissoc component :ardoq-component)))
+               (rest nodes)
+               (first (rest nodes)))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn find-component
+  [src components]
+  (loop [comps   components
+         current (first comps)]
+    (cond (= src (keyword (:id current))) current
+          (empty? comps)                  nil
+          :else                           (recur (rest comps) (first (rest comps))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-reference
+  [workspace source target reftype components]
+  (let [src (find-component source components)
+        tar (find-component target components)]
+    (assoc (client/-&gt;Reference (:_id workspace) (:_id src) (:_id tar))
+           :type reftype)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-ardoq-references
+  [graph components workspace]
+  (loop [nodes          (keys graph)
+         current-source (first nodes)
+         references     {}]
+    (if (empty? nodes)
+      references
+      (recur (rest nodes)
+             (first (rest nodes))
+             (assoc references
+                    current-source
+                    (mapv #(create-reference
+                            workspace
+                            current-source
+                            %
+                            (:contains ardoq-ref-types)
+                            components)
+                          (current-source graph)))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn components-&gt;ardoq
+  [components client]
+  (let [comps           (group-by #(= (:type %) :org-file)
+                                  components)
+        file            (first (get comps true))
+        headers         (get comps false)
+        file-created    (client/create file client)
+        file-_id        (:_id file-created)
+        headers-created (mapv #(client/create
+                                (assoc % :parent file-_id)
+                                client) headers)]
+    (conj headers-created file-created)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn references-&gt;ardoq
+  [components graph client workspace]
+  (mapv #(client/create % client)
+        (-&gt;
+         (create-ardoq-references graph components workspace)
+         vals
+         flatten)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn org-file-&gt;ardoq [filename]
+  (let [client                   (new-client-from-env)
+        model                    (find-org-model client)
+        workspace                (find-org-workspace client)
+        ;;fields            (find-org-fields client)
+        org-tree                 (parse-file filename)
+        map-tree                 (org-tree-&gt;map-tree org-tree)
+        graph                    (map-tree-&gt;graph map-tree)
+        ardoq-components         (create-ardoq-components
+                                  workspace
+                                  model
+                                  map-tree
+                                  graph)
+        created-ardoq-components (components-&gt;ardoq
+                                  (vals ardoq-components)
+                                  client)
+        created-ardoq-references (references-&gt;ardoq
+                                  created-ardoq-components
+                                  graph
+                                  client
+                                  workspace)]
+    {:ardoq-references created-ardoq-references
+     :ardoq-components created-ardoq-components}))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn main- []
+  (org-file-&gt;ardoq &quot;./resources/test.org&quot;))</pre></td></tr><tr><td class="docs"><p>relations (org-tree-map->ardoq-relations org-tree-map)</p>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Visualizes a .org file</p>
+</td><td class="codes"><pre class="brush: clojure">(defn visualize-org-file
+  [filename]
+  (view-tree (parse-file filename)))</pre></td></tr><tr><td class="docs"><p>(visualize-org-file "./resources/test.org")</p>
+</td><td class="codes"></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#links-graph.org" name="links-graph.org"><h1 class="project-name">links-graph.org</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns links-graph.org
+  (:require [instaparse.core :as insta]
+            [clojure.java.io :as io]
+            [rhizome.viz :as viz]
+            [clojure.set :as set]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn parse-string
+  [string]
+  (let [org-parser (insta/parser (io/resource &quot;org.bnf&quot;))]
+    (org-parser string)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn parse-file
+  [filename]
+  (let [org-file (io/file filename)
+        org-tree (parse-string (slurp org-file))]
+    (conj org-tree
+          [:title filename])))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn parse-resource
+  [resource-filename]
+  (parse-file
+   (io/resource resource-filename)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn node-type
   [node]
-  (if-let [name (:name node)]
-    nil
-    nil))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn graphify
-  [tree]
-  (-&gt;&gt; tree
-       (filter #(and (:level %) (:name %)))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn make-graph
-  [tree]
-  (into {} graphify tree))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn -main [])</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/gdeer81/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_links-graph.core">links-graph.core</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+  (when (sequential? node)
+    (let [type (first node)]
+      (when
+          (and (keyword? type)
+               (contains? #{:org-file
+                            :org-header-1
+                            :org-header-2
+                            :org-header-3
+                            :org-header-4
+                            :org-header-5
+                            :org-header-6
+                            :org-header-7} type))
+        type))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn node?
+  [maybe-node]
+  (some? (node-type maybe-node)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn children
+  [node]
+  (vec (filter node? node)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn leaf-node?
+  [node]
+  (-&gt; node
+      children
+      count
+      zero?))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn node-attr
+  [node attr]
+  (when (node? node)
+    (-&gt;&gt; node
+         (filter sequential?)
+         (remove empty?)
+         (filter #(= (first %) attr))
+         (map (comp first rest))
+         first)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn node-title
+  [node]
+  (node-attr node :title))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn node-level
+  [node]
+  (let [type-str (name (node-type node))]
+    (if-not (.contains type-str &quot;header&quot;)
+      0
+      (Character/getNumericValue (last (seq type-str))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn node-&gt;map
+  [node]
+  (when (node? node)
+    (let [type     (node-type node)
+          id       (keyword (gensym &quot;node&quot;))
+          org-node node]
+      {:type     type
+       :id       id
+       :org-node node
+       })))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn org-tree-&gt;map-tree
+  [root]
+  (when-not (nil? root)
+    (let [node     (node-&gt;map root)
+          children (mapv org-tree-&gt;map-tree (children root))]
+      (assoc node :children children))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn map-node-&gt;parent-child-ids
+  [root]
+  (when root
+    (let [child-ids (mapv :id (:children root))]
+      (assoc {} (:id root) child-ids))))</pre></td></tr><tr><td class="docs"><p>Turns a org-map-tree into a
+  ;=>  {:node-id [:child-1-id :child-2-id ...]  ...}
+  -representation of a graph by using
+  a BFS-traversal on the nodes.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn map-tree-&gt;graph
+  [start]
+  (let [visited #{} ; Don't really needed since it's a tree, but whatever.
+        queue   (conj clojure.lang.PersistentQueue/EMPTY start)
+        ]
+    (loop [visited visited
+           current (peek queue)
+           queue   queue
+           g       {}]
+      (if (zero? (count queue))
+        g
+        (if-not (contains? visited (:id current))
+          (recur (conj visited current)
+                 (peek queue)
+                 (into (pop queue) (:children current))
+                 (conj g (map-node-&gt;parent-child-ids current)))
+          (recur visited
+                 (peek queue)
+                 (into (pop queue) (:children current))
+                 g))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn find-by-id
+  [map-tree id]
+  (when map-tree
+    (if (= id (:id map-tree))
+      map-tree
+      (first (remove nil? (map #(find-by-id % id) (:children map-tree)))))))</pre></td></tr><tr><td class="docs"><p>Visualizes an org-tree</p>
+</td><td class="codes"><pre class="brush: clojure">(defn view-tree
+  [org-tree]
+  (viz/view-tree node? children org-tree
+                 :node-&gt;descriptor (fn [node] {:label (node-title node)})))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#ardoq.client" name="ardoq.client"><h1 class="project-name">ardoq.client</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns ardoq.client
+  (:require [org.httpkit.client :as http]
+            [clojure.data.json :as json]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defprotocol ArdoqResource
+  (resource-path [this]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord Workspace [name description componentModel]
+  ArdoqResource
+  (resource-path [_] &quot;workspace&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn workspace []
+  (map-&gt;Workspace {}))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord Component [name description rootWorkspace model typeId parent]
+  ArdoqResource
+  (resource-path [_] &quot;component&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord Model [name description]
+  ArdoqResource
+  (resource-path [_] &quot;model&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn model []
+  (map-&gt;Model {}))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord Reference [rootWorkspace source target]
+  ArdoqResource
+  (resource-path [_] &quot;reference&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord Field [label name type model componentType]
+  ArdoqResource
+  (resource-path [_] &quot;field&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord Tag [name description rootWorkspace components references]
+  ArdoqResource
+  (resource-path [_] &quot;tag&quot;))</pre></td></tr><tr><td class="docs"><p>Takes the root of a model and flattens it returning a typeId->type-map map</p>
+</td><td class="codes"><pre class="brush: clojure">(defn- to-component-type-map
+  [model]
+  (when model
+    (letfn [(flatten-model [nodes res]
+              (if (empty? nodes)
+                res
+                (let [{id       :id
+                       children :children
+                       :as      node}  (first nodes)
+                      r                (assoc res
+                                              (keyword id)
+                                              (update-in node [:children]
+                                                         #(mapv (comp name first) %)))
+                      updated-children (map (fn [[_ i]] (assoc i :parent id)) children)]
+                  (flatten-model (concat (rest nodes) updated-children) r))))]
+      (flatten-model (map (fn [[_ i]] (assoc i :parent nil)) (:root model)) {}))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn type-id-by-name [model type-name]
+  (some-&gt;&gt; (to-component-type-map model)
+           (vals)
+           (filter #(= type-name (:name %)))
+           (first)
+           (:id)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn client [{:keys [url token org]}]
+  (let [default-options {:timeout      2000
+                         :query-params {:org org}}
+        client          {:url     url
+                         :options (merge-with merge default-options {:headers {&quot;Authorization&quot; (str &quot;Token token=&quot; token)
+                                                                               &quot;Content-Type&quot;  &quot;application/json&quot;
+                                                                               &quot;User-Agent&quot;    &quot;antonaut-ardoq-clojure-client&quot;}})}]
+    (println &quot;Client configuration: &quot; client)
+    client))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn- ok? [status]
+  (cond (some? status)
+        (and (&lt; status 300)
+             (&gt; status 199))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn- new-by-name
+  [class-name &amp; args]
+  (clojure.lang.Reflector/invokeStaticMethod
+   (clojure.lang.RT/classForName class-name)
+   &quot;create&quot;
+   (into-array Object args)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn- coerce-response [resource data]
+  (new-by-name (.getName (class resource)) data))</pre></td></tr><tr><td class="docs"><p>Defines an API-call function which takes a resource and a
+  http/client together with optional url parameters.</p>
+</td><td class="codes"><pre class="brush: clojure">(comment
+  (defmacro defapicall
+    [name method &amp; {:keys [use-id? no-return? return-many?]
+                    :or   {:use-id?      false
+                           :no-return?   false
+                           :return-many? false}
+                    :as   options}]
+    (let [resource    (gensym &quot;resource&quot;)
+          client      (gensym &quot;client&quot;)
+          params      (gensym &quot;params&quot;)
+          parsed-body (gensym &quot;parsed-body&quot;)
+          path-suffix (if use-id?
+                        (list :_id resource)
+                        (list first params))
+          status-if   (if no-return?
+                        'if-not
+                        'if)
+          retvals     (cond
+                        (:return-many? options) (list (map
+                                                       (partial
+                                                        coerce-response
+                                                        resource
+                                                        parsed-body)))
+                        no-return?              ()
+                        :else                   (list (coerce-response resource parsed-body)))
+          ]
+      `(defn ~name [~resource ~client &amp; ~params]
+         (let [url#                    (str (:url ~client) &quot;/api/&quot; (resource-path ~resource) &quot;/&quot; ~path-suffix)
+               {:keys [status# body#]} @(~method url# (:options ~client))
+               ~parsed-body            (json/read-json body# true)]
+           (~status-if (ok? status#)
+            ~@retvals
+            (throw (ex-info &quot;client-exception&quot; {:status status# :body body#})))))))
+  ;;(macroexpand '(defapicall delete http/delete :no-return? true))
+  ;;(macroexpand '(defapicall find-all http/get :return-many? true))
+  (defapicall find-by-id http/get :use-id? true)
+  (defapicall find-all http/get :return-many? true)
+  (defapicall create http/post)
+  (defapicall update http/put)
+  (defapicall delete http/delete :no-return? true)
+  (defapicall aggregated-workspace http/delete :no-return? true))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn find-by-id [resource client &amp; parameters]
+  (let [url                   (str (:url client) &quot;/api/&quot; (resource-path resource) &quot;/&quot; (:_id resource))
+        {:keys [status body]} @(http/get url (:options client))]
+    (cond
+      (ok? status) (coerce-response resource (json/read-json body true))
+      :else        (throw (ex-info &quot;client-exception&quot; {:status status :body body})))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn find-all [resource client &amp; parameters]
+  (let [url                   (str (:url client) &quot;/api/&quot; (resource-path resource) (first parameters))
+        {:keys [status body]} @(http/get url (:options client))]
+    (cond
+      (ok? status) (map (partial coerce-response resource) (json/read-json body true))
+      :else        (throw (ex-info &quot;client-exception&quot; {:status status :body body})))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create [resource client]
+  (let [url                   (str (:url client) &quot;/api/&quot; (resource-path resource))
+        {:keys [status body]} @(http/post url (assoc (:options client) :body (json/write-str resource)))]
+    (cond
+      (ok? status) (coerce-response resource (json/read-json body true))
+      :else        (throw (ex-info &quot;client-exception&quot; {:status status :body body})))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn update [resource client]
+  (let [url                   (str (:url client) &quot;/api/&quot; (resource-path resource) &quot;/&quot; (:_id resource))
+        {:keys [status body]} @(http/put url (assoc (:options client) :body (json/write-str resource)))]
+    (cond
+      (ok? status) (coerce-response resource (json/read-json body true))
+      :else        (throw (ex-info &quot;client-exception&quot; {:status status :body body})))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn delete [resource client]
+  (let [url                   (str (:url client) &quot;/api/&quot; (resource-path resource) &quot;/&quot; (:_id resource))
+        {:keys [status body]} @(http/delete url (:options client))]
+    (if-not (ok? status)
+      (throw (ex-info &quot;client-exception&quot; {:status status :body body})))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn aggregated-workspace [resource client]
+  (let [url                   (str (:url client) &quot;/api/&quot; (resource-path resource) &quot;/&quot; (:_id resource) &quot;/aggregated&quot;)
+        {:keys [status body]} @(http/get url (:options client))]
+    (if-not (ok? status)
+      (throw (ex-info &quot;client-exception&quot; {:status status :body body})))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn find-or-create-model [client model]
+  (if-let [model (first (filter #(= model (:name %)) (find-all (map-&gt;Model {}) client)))]
+    model
+    (if-let [model (first (filter #(= model (:name %)) (find-all (map-&gt;Model {}) client &quot;?includeCommon=true&quot;)))]
+      (create model client))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/gdeer81/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_links-graph.org-tree-zipper">links-graph.org-tree-zipper</li><li class="floating-toc-li" id="floating-toc_links-graph.core">links-graph.core</li><li class="floating-toc-li" id="floating-toc_links-graph.org">links-graph.org</li><li class="floating-toc-li" id="floating-toc_ardoq.client">ardoq.client</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
 SyntaxHighlighter.all();
 
 // hackity hack

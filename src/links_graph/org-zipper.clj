@@ -1,7 +1,9 @@
+;;; # org-tree-zipper is not used
+;;; It is just a cave where ideas can grow.
+
 (ns links-graph.org-tree-zipper
   (:require [clojure.zip :as z]
-            [links-graph.org :refer :all]
-            ))
+            [links-graph.org :refer :all]))
 
 ;;; IDEA: Use a zipper to traverse the tree and replace org-nodes with ardoq-entities.
 

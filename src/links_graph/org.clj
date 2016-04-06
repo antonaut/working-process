@@ -73,7 +73,7 @@
 (defn node-level
   [node]
   (let [type-str (name (node-type node))]
-    (if (not (.contains type-str "header"))
+    (if-not (.contains type-str "header")
       0
       (Character/getNumericValue (last (seq type-str))))))
 
@@ -90,7 +90,7 @@
 
 (defn org-tree->map-tree
   [root]
-  (when (not (nil? root))
+  (when-not (nil? root)
     (let [node     (node->map root)
           children (mapv org-tree->map-tree (children root))]
       (assoc node :children children))))

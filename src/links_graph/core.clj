@@ -1,9 +1,10 @@
-;;;; links-graph - for visualization of .org-file headers
+;;;; # links-graph - for visualization of .org-file headers
 
 ;;; This module visualizes an .org file in two ways. The first is
-;;; through the org module, by using rhizome
-;;; (https://github.com/ztellman/rhizome). The second is through Ardoq
-;;; (https://ardoq.com) by using their client and REST-API.
+;;; through the org module, by using
+;;; [rhizome](https://github.com/ztellman/rhizome). The second is
+;;; through [Ardoq](https://ardoq.com) by using their client and
+;;; REST-API.
 
 ;; We use links-graph.org so we can turn an .org-file into a tree and
 ;; manipulate it as we wish.
@@ -14,16 +15,18 @@
             [clojure.java.io :as io]
             [clojure.set :refer [intersection]]
             [clojure.zip :as z]
+            [clojure.core :exclude [update]]
             [ardoq.client :as client]))
 
 
 ;; Default contents of resources/private/env.json:
-;;
-;;  {
-;;    "ARDOQ_API_URL"      : "https://app.ardoq.com",
-;;    "ARDOQ_API_TOKEN"    : "your-api-token",
-;;    "ARDOQ_ORGANIZATION" : "ardoq"
-;;  }
+;; <pre>
+;;    {
+;;      "ARDOQ_API_URL"      : "https://app.ardoq.com",
+;;      "ARDOQ_API_TOKEN"    : "your-api-token",
+;;      "ARDOQ_ORGANIZATION" : "ardoq"
+;;    }
+;; </pre>
 
 (defn new-client-from-env
   "Creates a new client from \"resources/private/env.json\"."
@@ -33,7 +36,7 @@
                     :token (:ARDOQ_API_TOKEN ardoq-info)
                     :org   (:ARDOQ_ORGANIZATION ardoq-info)})))
 
-
+;; ## Ardoq types
 ;; These components & references are defined in Ardoq. They were
 ;; fetched by asking the client for all the models and filtering them
 ;; for "Org headers".
@@ -51,6 +54,9 @@
 (def ardoq-ref-types
   {:contains 4
    :implicit 2})
+
+
+
 
 (defn find-org-model
   "Finds the models defined in Ardoq named \"Org headers\"."
@@ -100,19 +106,22 @@
        :fields {:level   field-level
                 :content field-content}))))
 
-
+;; TODO: Work on fields
 (comment
   (let [client (new-client-from-env)]
     (->>
      (find-org-fields client)
      (filter #(field-on-component-types? % ardoq-component-types)))))
 
+
+
+
 (defn create-ardoq-components
-  [workspace model  map-tree graph]
+  "Creates Ardoq components from a map-tree and a graph."
+  [workspace model map-tree graph]
   (loop [components {}
          nodes      (keys graph)
-         current    (first nodes)
-         ]
+         current    (first nodes)]
     (if (empty? nodes)
       components
       (let [component       (-> (add-ardoq-component
@@ -129,12 +138,16 @@
 
 
 (defn find-component
-  [src components]
+  "Performs a linear search in _components_ for the component with id
+  _source-id_."
+  [source-id components]
   (loop [comps   components
          current (first comps)]
-    (cond (= src (keyword (:id current))) current
-          (empty? comps)                  nil
-          :else                           (recur (rest comps) (first (rest comps))))))
+    (cond (= source-id (keyword (:id current))) current
+          (empty? comps)                        nil
+          :else                                 (recur (rest comps) (first (rest comps))))))
+
+;;; ### References
 
 (defn create-reference
   [workspace source target reftype components]
@@ -176,12 +189,23 @@
                                 client) headers)]
     (conj headers-created file-created)))
 
-(defn main- []
+(defn references->ardoq
+  [components graph client workspace]
+  (mapv #(client/create % client)
+        (->
+         (create-ardoq-references graph components workspace)
+         vals
+         flatten)))
+
+(defn org-file->ardoq
+  "Adds a .org-file to Ardoq.
+  Returns a map with the references and the components created."
+  [filename]
   (let [client                   (new-client-from-env)
         model                    (find-org-model client)
         workspace                (find-org-workspace client)
         ;;fields            (find-org-fields client)
-        org-tree                 (parse-file "./resources/test.org")
+        org-tree                 (parse-file filename)
         map-tree                 (org-tree->map-tree org-tree)
         graph                    (map-tree->graph map-tree)
         ardoq-components         (create-ardoq-components
@@ -191,22 +215,23 @@
                                   graph)
         created-ardoq-components (components->ardoq
                                   (vals ardoq-components)
-                                  client)]
-    (mapv #(client/create % client)
-          (->
-           (create-ardoq-references graph created-ardoq-components workspace)
-           vals
-           flatten
-           ))))
+                                  client)
+        created-ardoq-references (references->ardoq
+                                  created-ardoq-components
+                                  graph
+                                  client
+                                  workspace)]
+    {:ardoq-references created-ardoq-references
+     :ardoq-components created-ardoq-components}))
 
-;; relations (org-tree-map->ardoq-relations org-tree-map)
 
 (defn visualize-org-file
-  "Visualizes a .org file"
+  "Visualizes a .org file with links-graph.org/view-tree."
   [filename]
   (view-tree (parse-file filename)))
 
-;;(visualize-org-file "./resources/test.org")
+;; <pre>(visualize-org-file "./resources/test.org")</pre>
 
-(defn org-file->ardoq
-  [filename])
+
+(defn main- []
+  (org-file->ardoq "./resources/test.org"))
