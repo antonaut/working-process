@@ -1,6 +1,5 @@
 (* This describes a subset of the org-mode syntax. *)
 
-
 org-file = (org-header-1 | comment | regular-line)* | <Epsilon>
 
 (* Headers *)
@@ -19,7 +18,7 @@ regular-line = non-comment-or-header-start (text-chars | blanks)* <#"\n">
 (* Text/tokens *)
 comment = <'#'> (text-chars | blanks )* <#"\n">
 <whitespace> = <#"\s+">
-<text-chars> = #"[\p{Alnum}\p{Punct}]+"
+<text-chars> = #"[\p{Alnum}\p{Punct}’]+"
 <blanks> = <#"\p{Blank}+">
 title = #".*" <"\n">
 content = (#"(.)+"+ <#"\n">)*
