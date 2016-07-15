@@ -1,6 +1,6 @@
 # links-graph
 
-A Clojure library used to parse stuff into [http://ardoq.com](Ardoq).
+A Clojure library used to parse stuff into [Ardoq](http://ardoq.com).
 
 ## Usage
 
