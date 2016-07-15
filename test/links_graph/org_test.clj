@@ -51,6 +51,11 @@
            "Some text."
            "*** Three"))
 
+(defn test-view-tree []
+  (-> "test2.org"
+      parse-resource
+      view-tree))
+
 (defn parses-test
   [string]
   (let [org-parser (insta/parser (io/resource "org.bnf"))]
@@ -90,10 +95,11 @@
               dec)))))
 
 ;;; Graph repesentation
-(let [m1  (org-tree->map-tree t1)
-      g1  (map-tree->graph m1)
-      id1 (first (first (vals g1)))]
-  (find-by-id m1 id1))
+(defn test-graph []
+  (let [m1  (org-tree->map-tree t1)
+        g1  (map-tree->graph m1)
+        id1 (first (first (vals g1)))]
+    (find-by-id m1 id1)))
 
 ;;; Visualization
 ;;(view-tree t1)

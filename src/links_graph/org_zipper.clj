@@ -1,7 +1,7 @@
 ;;; # org-tree-zipper is not used
 ;;; It is just a cave where ideas can grow.
 
-(ns links-graph.org-tree-zipper
+(ns links-graph.org-zipper
   (:require [clojure.zip :as z]
             [links-graph.org :refer :all]))
 

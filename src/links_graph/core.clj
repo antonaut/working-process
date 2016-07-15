@@ -15,7 +15,6 @@
             [clojure.java.io :as io]
             [clojure.set :refer [intersection]]
             [clojure.zip :as z]
-            [clojure.core :exclude [update]]
             [ardoq.client :as client]))
 
 
@@ -27,6 +26,8 @@
 ;;      "ARDOQ_ORGANIZATION" : "ardoq"
 ;;    }
 ;; </pre>
+
+
 
 (defn new-client-from-env
   "Creates a new client from \"resources/private/env.json\"."
@@ -56,8 +57,6 @@
    :implicit 2})
 
 
-
-
 (defn find-org-model
   "Finds the models defined in Ardoq named \"Org headers\"."
   [client]
@@ -76,7 +75,7 @@
   [client]
   ;; QUESTION: How to query? Ex. all fields used in a certain workspace
   ;; ANSWER: Filter in client.
-  (->> (client/find-all (client/map->Field {}) client)))
+  (client/find-all (client/map->Field {}) client))
 
 (defn field-on-component-types?
   "Is this client/Field defined for given component-types?"
@@ -108,12 +107,8 @@
 
 ;; TODO: Work on fields
 (comment
-  (let [client (new-client-from-env)]
-    (->>
-     (find-org-fields client)
-     (filter #(field-on-component-types? % ardoq-component-types)))))
-
-
+  (let [client (new-client-from-env)])
+  (filter #(field-on-component-types? % ardoq-component-types) (find-org-fields client)))
 
 
 (defn create-ardoq-components
@@ -124,11 +119,10 @@
          current    (first nodes)]
     (if (empty? nodes)
       components
-      (let [component       (-> (add-ardoq-component
-                                 (find-by-id map-tree current)
-                                 workspace
-                                 model)
-                                (dissoc :children :org-node))
+      (let [component       (dissoc (add-ardoq-component
+                                     (find-by-id map-tree current)
+                                     workspace
+                                     model) :children :org-node)
             ardoq-component (:ardoq-component component)]
         (recur (assoc components (:id component)
                       (conj ardoq-component
@@ -139,7 +133,7 @@
 
 (defn find-component
   "Performs a linear search in _components_ for the component with id
-  _source-id_."
+  _source-id_. Returns nil if a component isn't found."
   [source-id components]
   (loop [comps   components
          current (first comps)]
@@ -232,6 +226,7 @@
 
 ;; <pre>(visualize-org-file "./resources/test.org")</pre>
 
+;; (links-graph.org/parse-file "/home/aerholt/Dropbox/thesis/specification/specification.org")
 
 (defn main- []
   (org-file->ardoq "./resources/test.org"))
