@@ -1,4 +1,7 @@
-(ns links-graph.ardoq-helper)
+(ns links-graph.ardoq-helper
+  (:require [ardoq.client :as client]
+            [clojure.data.json :as json]
+            [clojure.java.io :as io]))
 
 ;; Default contents of resources/private/env.json:
 ;; <pre>
@@ -23,7 +26,7 @@
   [client model-name]
   (->> (client/find-all (client/map->Model {}) client)
        (filter #(= model-name (:name %)))
-       first)
+       first))
 
 (defn find-workspace-by-name
   "Finds a workspace in Ardoq with given name."

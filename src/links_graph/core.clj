@@ -1,5 +1,5 @@
 (ns links-graph.core
-  (:require [links-graph.orgviz]))
+  (:require [links-graph.orgviz :refer :all]))
 
 (defn main- []
-  (orgviz/org-file->ardoq "./resources/test.org"))
+  (org-file->ardoq "./resources/test.org"))

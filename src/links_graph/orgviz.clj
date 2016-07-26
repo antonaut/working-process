@@ -10,13 +10,12 @@
 ;; manipulate it as we wish.
 
 (ns links-graph.orgviz
+  (:refer-clojure :exclude [update])
   (:require [links-graph.org :refer :all :as org]
             [links-graph.ardoq-helper :refer :all :as ardoq]
             [clojure.set :refer [intersection]]
             [clojure.zip :as z]
             [ardoq.client :as client]))
-
-
 
 ;; ## Ardoq types
 ;; These components & references are defined in Ardoq. They were
@@ -31,7 +30,7 @@
    :org-header-5 "p1464792496575"
    :org-header-6 "p1464792496575"
    :org-header-7 "p1464792496575"
-   :org-file     "p1459344429473"})
+   :org-file     "p1463698041173"})
 
 (def ardoq-ref-types
   {:contains 4
@@ -54,29 +53,29 @@
   "Is this client/Field defined for given component-types?"
   [field ardoq-component-types]
   (let [component-types (set (:componentType field))
-        org-components  (set (vals ardoq-component-types))]
+        org-components (set (vals ardoq-component-types))]
     ((complement zero?) (count (intersection component-types org-components)))))
 
 (defn add-ardoq-component
   "Adds Ardoq components to a map-node."
   [node workspace model]
   (if-not (nil? node)
-    (let [org-node       (:org-node node)
+    (let [org-node (:org-node node)
           component-name (node-attr org-node :title)
           component-type (node-type org-node)
-          field-level    (node-level org-node)
-          field-content  (node-attr org-node :content)]
+          field-level (node-level org-node)
+          field-content (node-attr org-node :content)]
       (assoc
-       node
-       :ardoq-component
-       (client/->Component component-name
-                           ""
-                           (:_id workspace)
-                           (:_id model)
-                           (component-type ardoq-component-types)
-                           (:content (node-attr org-node :content)))
-       :fields {:level   field-level
-                :content field-content}))))
+        node
+        :ardoq-component
+        (client/->Component component-name
+                            ""
+                            (:_id workspace)
+                            (:_id model)
+                            (component-type ardoq-component-types)
+                            (:content (node-attr org-node :content)))
+        :fields {:level   field-level
+                 :content field-content}))))
 
 ;; TODO: Work on fields
 (comment
@@ -88,18 +87,18 @@
   "Creates Ardoq components from a map-tree and a graph."
   [workspace model map-tree graph]
   (loop [components {}
-         nodes      (keys graph)
-         current    (first nodes)]
+         nodes (keys graph)
+         current (first nodes)]
     (if (empty? nodes)
       components
-      (let [component       (dissoc (add-ardoq-component
-                                     (find-by-id map-tree current)
-                                     workspace
-                                     model) :children :org-node)
+      (let [component (dissoc (add-ardoq-component
+                                (find-by-id map-tree current)
+                                workspace
+                                model) :children :org-node)
             ardoq-component (:ardoq-component component)]
         (recur (assoc components (:id component)
-                      (conj ardoq-component
-                            (dissoc component :ardoq-component)))
+                                 (conj ardoq-component
+                                       (dissoc component :ardoq-component)))
                (rest nodes)
                (first (rest nodes)))))))
 
@@ -108,11 +107,11 @@
   "Performs a linear search in _components_ for the component with id
   _source-id_. Returns nil if a component isn't found."
   [source-id components]
-  (loop [comps   components
+  (loop [comps components
          current (first comps)]
     (cond (= source-id (keyword (:id current))) current
-          (empty? comps)                        nil
-          :else                                 (recur (rest comps) (first (rest comps))))))
+          (empty? comps) nil
+          :else (recur (rest comps) (first (rest comps))))))
 
 ;;; ### References
 
@@ -121,36 +120,36 @@
   (let [src (find-component source components)
         tar (find-component target components)]
     (assoc (client/->Reference (:_id workspace) (:_id src) (:_id tar))
-           :type reftype)))
+      :type reftype)))
 
 
 (defn create-ardoq-references
   [graph components workspace]
-  (loop [nodes          (keys graph)
+  (loop [nodes (keys graph)
          current-source (first nodes)
-         references     {}]
+         references {}]
     (if (empty? nodes)
       references
       (recur (rest nodes)
              (first (rest nodes))
              (assoc references
-                    current-source
-                    (mapv #(create-reference
-                            workspace
-                            current-source
-                            %
-                            (:contains ardoq-ref-types)
-                            components)
-                          (current-source graph)))))))
+               current-source
+               (mapv #(create-reference
+                       workspace
+                       current-source
+                       %
+                       (:contains ardoq-ref-types)
+                       components)
+                     (current-source graph)))))))
 
 (defn components->ardoq
   [components client]
-  (let [comps           (group-by #(= (:type %) :org-file)
-                                  components)
-        file            (first (get comps true))
-        headers         (get comps false)
-        file-created    (client/create file client)
-        file-_id        (:_id file-created)
+  (let [comps (group-by #(= (:type %) :org-file)
+                        components)
+        file (first (get comps true))
+        headers (get comps false)
+        file-created (client/create file client)
+        file-_id (:_id file-created)
         headers-created (mapv #(client/create
                                 (assoc % :parent file-_id)
                                 client) headers)]
@@ -160,34 +159,50 @@
   [components graph client workspace]
   (mapv #(client/create % client)
         (->
-         (create-ardoq-references graph components workspace)
-         vals
-         flatten)))
+          (create-ardoq-references graph components workspace)
+          vals
+          flatten)))
+
+(comment
+  (let [filename "./resources/test.org"
+        client (ardoq/new-client-from-env)
+        model (find-org-model client)
+        workspace (find-org-workspace client)
+        ;;fields            (find-org-fields client)
+        org-tree (parse-file filename)
+        map-tree (org-tree->map-tree org-tree)
+        graph (map-tree->graph map-tree)
+        ardoq-components (create-ardoq-components
+                           workspace
+                           model
+                           map-tree
+                           graph)] ardoq-components))
+
 
 (defn org-file->ardoq
   "Adds a .org-file to Ardoq.
   Returns a map with the references and the components created."
   [filename]
-  (let [client                   (ardoq/new-client-from-env)
-        model                    (find-org-model client)
-        workspace                (find-org-workspace client)
+  (let [client (ardoq/new-client-from-env)
+        model (find-org-model client)
+        workspace (find-org-workspace client)
         ;;fields            (find-org-fields client)
-        org-tree                 (parse-file filename)
-        map-tree                 (org-tree->map-tree org-tree)
-        graph                    (map-tree->graph map-tree)
-        ardoq-components         (create-ardoq-components
-                                  workspace
-                                  model
-                                  map-tree
-                                  graph)
+        org-tree (parse-file filename)
+        map-tree (org-tree->map-tree org-tree)
+        graph (map-tree->graph map-tree)
+        ardoq-components (create-ardoq-components
+                           workspace
+                           model
+                           map-tree
+                           graph)
         created-ardoq-components (components->ardoq
-                                  (vals ardoq-components)
-                                  client)
+                                   (vals ardoq-components)
+                                   client)
         created-ardoq-references (references->ardoq
-                                  created-ardoq-components
-                                  graph
-                                  client
-                                  workspace)]
+                                   created-ardoq-components
+                                   graph
+                                   client
+                                   workspace)]
     {:ardoq-references created-ardoq-references
      :ardoq-components created-ardoq-components}))
 
@@ -198,8 +213,6 @@
   (view-tree (parse-file filename)))
 
 
-  (let [client                   (ardoq/new-client-from-env)
-        model                    (find-org-model client)] model)
 
 ;; <pre>(visualize-org-file "./resources/test.org")</pre>
 
