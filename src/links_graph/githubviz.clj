@@ -8,6 +8,10 @@
             [ardoq.client :as client])
   (:import (org.apache.commons.lang3 StringEscapeUtils)))
 
+
+(def ardoq-workspace-id "5721ee1272fa6d3b497b82ee")
+(def ardoq-model-id "579714029f2a2666b614c576")
+
 (defn find-github-model
   [client]
   (ardoq-helper/find-model-by-name client "github-repo-mini-model"))
@@ -87,7 +91,7 @@
    (mapv
     (fn [[k v]] (let [kwstr (->kebab-case (:name v))
                       kw (keyword (if (empty? kwstr) "default" kwstr))
-                      val (clojure.string/lower-case (name k))] (hash-map kw val)))
+                      val (Integer/parseInt (clojure.string/lower-case (name k)))] (hash-map kw val)))
     (:referenceTypes github-model-data))))
 
 
@@ -124,8 +128,6 @@
     {:ws workspace-id
      :ml model-id}))
 
-(def ardoq-workspace-id "5721ee1272fa6d3b497b82ee")
-(def ardoq-model-id "579714029f2a2666b614c576")
 
 
 (defn get-child-set [parent]
@@ -219,22 +221,75 @@
     (:artifact (github-component-types))
     parent-id))
 
-(defn create-ardoq-issue [c parent-id issue]
+(defn issues->ardoq [c parent-id]
+  (for [issue github/test-issues]
   (client/create
    (create-issue-component parent-id issue)
+   c)))
+
+(defn create-commit-collection [c parent-id]
+  (client/create
+   (client/->Component
+    "Commits"
+    nil
+    ardoq-workspace-id
+    ardoq-model-id
+    (:collection (github-component-types))
+    parent-id)
    c))
 
+(nth github/test-commits 3)
 
-(defn issues->ardoq [c parent-id]
-  (doseq [issue github/test-issues]
-     (create-ardoq-issue c parent-id issue)))
+(defn create-commit-component [parent-id commit]
+  (client/->Component
+   (:sha commit)
+   (:message commit)
+   ardoq-workspace-id
+   ardoq-model-id
+   (:artifact (github-component-types))
+   parent-id))
 
-(nth github/test-issues 5)
+(defn commits->ardoq
+  [c parent-id]
+  (for [commit github/test-commits]
+    (merge
+     commit
+     (client/create
+      (create-commit-component parent-id commit)
+      c))))
+
+
+(defn parent-reference [child-id parent-id]
+  (when (and (some? parent-id)
+             (some? child-id))
+    (assoc (client/->Reference ardoq-workspace-id child-id parent-id)
+           :type (:default (github-reference-types)))))
+
+(defn find-parents [commit artifacts]
+  (let [parent-shas (set (:parents commit))
+        parents (if (empty? parent-shas)
+                  #{(:parent commit)}
+                  parent-shas)]
+  (filterv #(parents (:sha %)) artifacts)))
+
+(defn create-commit-references [c commits]
+    (doseq [commit commits
+            parent (find-parents commit commits)]
+      (let [ref (parent-reference (:_id commit)
+                                  (:_id parent))]
+        (when (some? ref)
+          (client/create
+           ref
+           c)))))
 
 (defn create-ardoq-project []
   (let [c (ardoq-helper/new-client-from-env)
-        ardoq-origin (create-origin c)
-        ardoq-issue-collection (create-issue-collection c (:_id ardoq-origin))
-        ardoq-issues (issues->ardoq c (:_id ardoq-issue-collection))]))
+        origin (create-origin c)
+;;        issue-collection (create-issue-collection c (:_id origin))
+;;        issues (issues->ardoq c (:_id issue-collection))
+        commit-collection (create-commit-collection c (:_id origin))
+        commits (commits->ardoq c (:_id commit-collection))
+        commit-references (create-commit-references c commits)]))
+
 
 ;; (create-ardoq-project)

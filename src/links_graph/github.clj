@@ -28,6 +28,7 @@
 ;; Test repository: https://github.com/clips/pattern
 (def gh-user "clips")
 (def gh-repo "pattern")
+(def gh-origin (str gh-user "/" gh-repo))
 
 (defn my-emails
   []
