@@ -196,33 +196,39 @@
     parent-id)
    c))
 
+(defn max-length-of-30 [title]
+  (let [title-length (.length title)]
+    (if (< title-length 30)
+      title
+      (str
+       (.substring title 0 26)
+       "..."))))
+
 (defn issue-title [issue]
-  (let [title (:title issue)
-        title-length (.length title)]
-    (str
-     "#"
-     (:number issue)
-     " "
-     (if (< title-length 30)
-       title
-       (str
-        (.substring title 0 26)
-        "...")))))
+  (str
+   "#"
+   (:number issue)
+   " "
+   (max-length-of-30 (:title issue))))
 
 (defn create-issue-component [parent-id issue]
-  (client/->Component
-   (issue-title issue)
-   (StringEscapeUtils/escapeHtml4 (:description issue))
-   ardoq-workspace-id
-   ardoq-model-id
-   (:artifact (github-component-types))
-   parent-id))
+  (let [issue-fields (dissoc issue :type :title :description)]
+    (merge
+     (client/->Component
+      (issue-title issue)
+      (StringEscapeUtils/escapeHtml4 (:description issue))
+      ardoq-workspace-id
+      ardoq-model-id
+      (:artifact (github-component-types))
+      parent-id)
+     issue-fields)))
 
 (defn issues->ardoq [c parent-id]
-  (for [issue github/test-issues]
-    (client/create
-     (create-issue-component parent-id issue)
-     c)))
+  (doall
+   (for [issue github/test-issues]
+     (client/create
+      (create-issue-component parent-id issue)
+      c))))
 
 (defn create-commit-collection [c parent-id]
   (client/create
@@ -235,11 +241,9 @@
     parent-id)
    c))
 
-(nth github/test-commits 3)
-
 (defn create-commit-component [parent-id commit]
   (client/->Component
-   (:message commit)
+   (max-length-of-30 (:message commit))
    (:sha commit)
    ardoq-workspace-id
    ardoq-model-id
@@ -249,12 +253,12 @@
 (defn commits->ardoq
   [c parent-id]
   (for [commit github/test-commits]
-    (merge
-     commit
-     (client/create
-      (create-commit-component parent-id commit)
-      c))))
-
+    (let [created-commit (client/create
+                          (merge
+                           (create-commit-component parent-id commit)
+                           commit)
+                          c)]
+      created-commit)))
 
 (defn parent-reference [child-id parent-id]
   (when (and (some? parent-id)
@@ -279,13 +283,17 @@
            ref
            c)))))
 
+(defn create-issues [c origin]
+  (issues->ardoq c (:_id (create-issue-collection c (:_id origin)))))
+
 (defn create-ardoq-project []
   (let [c (ardoq-helper/new-client-from-env)
         origin (create-origin c)
-        issue-collection (create-issue-collection c (:_id origin))
-        issues (issues->ardoq c (:_id issue-collection))
+        issues (create-issues c origin)
         commit-collection (create-commit-collection c (:_id origin))
         commits (commits->ardoq c (:_id commit-collection))
         commit-references (create-commit-references c commits)]))
 
-;; (create-ardoq-project)
+
+;;(get-ardoq-project-by-origin-name gh-origin)
+;;(create-ardoq-project)
