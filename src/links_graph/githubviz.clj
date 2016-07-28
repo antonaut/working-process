@@ -8,14 +8,12 @@
             [ardoq.client :as client])
   (:import (org.apache.commons.lang3 StringEscapeUtils)))
 
-
 (def ardoq-workspace-id "5721ee1272fa6d3b497b82ee")
-(def ardoq-model-id "579714029f2a2666b614c576")
+(def ardoq-model-id "5799fdf29f2a262b179d315f")
 
 (defn find-github-model
-  [client]
-  (ardoq-helper/find-model-by-name client "github-repo-mini-model"))
-
+  [c]
+  (ardoq-helper/find-model-by-name c "github-repo-mini-model"))
 
 (defn find-github-workspace
   "Finds the github workspace in Ardoq."
@@ -214,18 +212,17 @@
 (defn create-issue-component [parent-id issue]
   (client/->Component
    (issue-title issue)
-    (StringEscapeUtils/escapeHtml4 (:description issue))
-    ;;(clojure.string/escape  (:description issue) {\< " < " \> " > "})
-    ardoq-workspace-id
-    ardoq-model-id
-    (:artifact (github-component-types))
-    parent-id))
+   (StringEscapeUtils/escapeHtml4 (:description issue))
+   ardoq-workspace-id
+   ardoq-model-id
+   (:artifact (github-component-types))
+   parent-id))
 
 (defn issues->ardoq [c parent-id]
   (for [issue github/test-issues]
-  (client/create
-   (create-issue-component parent-id issue)
-   c)))
+    (client/create
+     (create-issue-component parent-id issue)
+     c)))
 
 (defn create-commit-collection [c parent-id]
   (client/create
@@ -242,8 +239,8 @@
 
 (defn create-commit-component [parent-id commit]
   (client/->Component
-   (:sha commit)
    (:message commit)
+   (:sha commit)
    ardoq-workspace-id
    ardoq-model-id
    (:artifact (github-component-types))
@@ -263,7 +260,7 @@
   (when (and (some? parent-id)
              (some? child-id))
     (assoc (client/->Reference ardoq-workspace-id child-id parent-id)
-           :type (:default (github-reference-types)))))
+           :type (:parent (github-reference-types)))))
 
 (defn find-parents [commit artifacts]
   (let [parent-shas (set (:parents commit))
@@ -285,11 +282,10 @@
 (defn create-ardoq-project []
   (let [c (ardoq-helper/new-client-from-env)
         origin (create-origin c)
-;;        issue-collection (create-issue-collection c (:_id origin))
-;;        issues (issues->ardoq c (:_id issue-collection))
+        issue-collection (create-issue-collection c (:_id origin))
+        issues (issues->ardoq c (:_id issue-collection))
         commit-collection (create-commit-collection c (:_id origin))
         commits (commits->ardoq c (:_id commit-collection))
         commit-references (create-commit-references c commits)]))
-
 
 ;; (create-ardoq-project)

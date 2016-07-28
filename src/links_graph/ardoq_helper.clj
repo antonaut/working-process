@@ -23,20 +23,20 @@
 
 (defn find-model-by-name
   "Finds a model in Ardoq with given name."
-  [client model-name]
-  (->> (client/find-all (client/map->Model {}) client)
+  [c model-name]
+  (->> (client/find-all (client/map->Model {}) c)
        (filter #(= model-name (:name %)))
        first))
 
 (defn find-workspace-by-name
   "Finds a workspace in Ardoq with given name."
-  [client workspace-name]
-  (->> (client/find-all (client/map->Workspace {}) client)
+  [c workspace-name]
+  (->> (client/find-all (client/map->Workspace {}) c)
        (filter #(= workspace-name (:name %)))
        first))
 
 (defn find-all-fields
-  [client]
+  [c]
   ;; QUESTION: How to query? Ex. all fields used in a certain workspace
   ;; ANSWER: Filter in client.
-  (client/find-all (client/map->Field {}) client))
+  (client/find-all (client/map->Field {}) c))
