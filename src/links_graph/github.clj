@@ -80,10 +80,12 @@
 
 (defn issue->vis-issue [m]
   (hash-map
-     :time (:updated_at m)
+     :number (:number m)
+     :type :issue
+     :time (:created_at m)
      :title (:title m)
-     :author-name (:login (:user m))))
-
+     :author-name (:login (:user m))
+     :description (:body m)))
 
 (def test-issues
   (map
@@ -96,6 +98,7 @@
 
 (defn commit->vis-commit [m]
   (hash-map
+   :type :commit
    :author-name (get-in m [:commit :author :name])
    :message (get-in m [:commit :message])
    :sha (:sha m)
@@ -106,6 +109,9 @@
   (mapv
    commit->vis-commit
    commits-test-data))
+
+;; Origin
+(def test-origin (str gh-user "/" gh-repo))
 
 ;; (->  (nth test-commits 27)
 ;;      :message)
